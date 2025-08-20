@@ -186,7 +186,8 @@ class ParentProfileForm(forms.ModelForm):
 class ChildInline(admin.TabularInline):
     """Inline for managing children within parent profile"""
     model = Child
-    extra = 1
+    extra = 0
+    min_num = 1
     fields = ('name', 'age', 'gender', 'assigned_therapist', 'clinic')
     autocomplete_fields = ['assigned_therapist']
 
@@ -215,6 +216,25 @@ class ChildInline(admin.TabularInline):
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+    def get_formset(self, request, obj=None, **kwargs):
+        """Customize the formset to ensure proper child creation"""
+        formset = super().get_formset(request, obj, **kwargs)
+        
+        class CustomChildFormSet(formset):
+            def save_new(self, form, commit=True):
+                """Override to auto-assign clinic when saving new children"""
+                child = super().save_new(form, commit=False)
+                
+                # Auto-assign clinic for clinic admin
+                if request.user.role and request.user.role.name == 'Clinic Admin':
+                    if hasattr(request.user, 'clinic_admin'):
+                        child.clinic = request.user.clinic_admin
+                
+                if commit:
+                    child.save()
+                return child
+        
+        return CustomChildFormSet
 
 @admin.register(ParentProfile)
 class ParentProfileAdmin(admin.ModelAdmin):
@@ -240,6 +260,11 @@ class ParentProfileAdmin(admin.ModelAdmin):
         })
     )
 
+    class Media:
+        css = {
+            'all': ('admin/css/forms.css',)
+        }
+        js = ('admin/js/inlines.js',)
     def has_module_permission(self, request):
         """Allow Neuvii Admin full access, others limited"""
         if not request.user.is_authenticated:

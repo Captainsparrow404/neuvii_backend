@@ -1,0 +1,240 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .dashboard-welcome {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .dashboard-welcome h1 {
+        font-size: 32px;
+        margin: 0 0 10px 0;
+        font-weight: 700;
+    }
+
+    .dashboard-welcome p {
+        font-size: 16px;
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin: 30px 0;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-left: 5px solid #667eea;
+        transition: transform 0.3s ease;
+        text-align: center;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .stat-card h3 {
+        color: #667eea;
+        font-size: 36px;
+        margin: 0 0 10px 0;
+        font-weight: 700;
+    }
+
+    .stat-card p {
+        color: #6c757d;
+        margin: 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+
+    .quick-actions {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-top: 30px;
+    }
+
+    .quick-actions h2 {
+        color: #495057;
+        margin: 0 0 20px 0;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .action-btn {
+        display: block;
+        padding: 15px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 13px;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-welcome">
+    <h1>Welcome to Neuvii</h1>
+    <p>
+        {% if user.role %}
+            {{ user.role.name }} Dashboard - {{ user.get_full_name }}
+        {% else %}
+            Therapy Management System
+        {% endif %}
+    </p>
+</div>
+
+{% if user.role.name == 'Neuvii Admin' %}
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <h3>{{ total_clinics|default:0 }}</h3>
+            <p>Total Clinics</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ active_clinics|default:0 }}</h3>
+            <p>Active Clinics</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ total_therapists|default:0 }}</h3>
+            <p>Total Therapists</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ total_clients|default:0 }}</h3>
+            <p>Total Clients</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ total_children|default:0 }}</h3>
+            <p>Total Children</p>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+            <a href="{% url 'admin:clinic_clinic_add' %}" class="action-btn">Add New Clinic</a>
+            <a href="{% url 'admin:therapy_therapistprofile_add' %}" class="action-btn">Add New Therapist</a>
+            <a href="{% url 'admin:therapy_parentprofile_add' %}" class="action-btn">Add New Client</a>
+            <a href="{% url 'admin:therapy_child_changelist' %}" class="action-btn">View All Children</a>
+        </div>
+    </div>
+
+{% elif user.role.name == 'Clinic Admin' %}
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <h3>{{ clinic_therapists|default:0 }}</h3>
+            <p>Clinic Therapists</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ clinic_children|default:0 }}</h3>
+            <p>Clinic Children</p>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+            <a href="{% url 'admin:therapy_therapistprofile_add' %}" class="action-btn">Add New Therapist</a>
+            <a href="{% url 'admin:therapy_parentprofile_add' %}" class="action-btn">Add New Client</a>
+            <a href="{% url 'admin:therapy_child_changelist' %}" class="action-btn">View Children</a>
+        </div>
+    </div>
+
+{% elif user.role.name == 'Therapist' %}
+    <div class="quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+            <a href="{% url 'admin:therapy_child_changelist' %}" class="action-btn">View My Children</a>
+            <a href="{% url 'admin:therapy_assignment_add' %}" class="action-btn">Create Assignment</a>
+            <a href="{% url 'admin:therapy_goal_add' %}" class="action-btn">Add New Goal</a>
+            <a href="{% url 'admin:therapy_task_add' %}" class="action-btn">Create Task</a>
+        </div>
+    </div>
+
+{% elif user.role.name == 'Parent' %}
+    <div class="quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+            <a href="{% url 'admin:therapy_child_changelist' %}" class="action-btn">View My Children</a>
+            <a href="{% url 'admin:therapy_assignment_changelist' %}" class="action-btn">View Assignments</a>
+        </div>
+    </div>
+{% endif %}
+
+<div style="margin-top: 40px;">
+    {% if app_list %}
+        {% for app in app_list %}
+            <div class="app-{{ app.app_label }} module">
+                <table>
+                    <caption>
+                        <a href="{{ app.app_url }}" class="section" title="{% blocktrans with name=app.name %}Models in the {{ name }} application{% endblocktrans %}">{{ app.name }}</a>
+                    </caption>
+                    {% for model in app.models %}
+                        <tr class="model-{{ model.object_name|lower }}">
+                            {% if model.admin_url %}
+                                <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
+                            {% else %}
+                                <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
+                            {% endif %}
+
+                            {% if model.add_url %}
+                                <td><a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a></td>
+                            {% else %}
+                                <td>&nbsp;</td>
+                            {% endif %}
+
+                            {% if model.admin_url %}
+                                {% if model.view_only %}
+                                    <td><a href="{{ model.admin_url }}" class="viewlink">{% trans 'View' %}</a></td>
+                                {% else %}
+                                    <td><a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a></td>
+                                {% endif %}
+                            {% else %}
+                                <td>&nbsp;</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>{% trans "You don't have permission to view or edit anything." %}</p>
+    {% endif %}
+</div>
+{% endblock %}
