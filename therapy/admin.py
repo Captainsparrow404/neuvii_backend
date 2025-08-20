@@ -365,35 +365,49 @@ class ChildAdmin(admin.ModelAdmin):
     list_filter = ['clinic', 'gender', 'created_at', 'assigned_therapist']
 
     def has_module_permission(self, request):
-        """Only show Child admin for Neuvii Admin for advanced management"""
+        """Allow access based on role"""
         if not request.user.is_authenticated:
             return False
         if request.user.is_superuser:
             return True
         if hasattr(request.user, 'role') and request.user.role:
-            # Only Neuvii Admin can see Child as separate admin
-            return request.user.role.name == 'Neuvii Admin'
+            return request.user.role.name in ['Neuvii Admin', 'Clinic Admin', 'Therapist', 'Parent']
         return False
 
     def has_view_permission(self, request, obj=None):
         if not self.has_module_permission(request):
             return False
+        # Neuvii Admin can view all
+        if request.user.role and request.user.role.name == 'Neuvii Admin':
+            return True
         return True
 
     def has_add_permission(self, request):
         if not self.has_module_permission(request):
             return False
-        return True
+        if hasattr(request.user, 'role') and request.user.role:
+            if request.user.role.name == 'Neuvii Admin':
+                return True  # Full permission for Neuvii Admin
+            return request.user.role.name in ['Clinic Admin']
+        return False
 
     def has_change_permission(self, request, obj=None):
         if not self.has_module_permission(request):
             return False
-        return True
+        if hasattr(request.user, 'role') and request.user.role:
+            if request.user.role.name == 'Neuvii Admin':
+                return True  # Full permission for Neuvii Admin
+            if request.user.role.name == 'Parent':
+                return False  # Parents can't change children
+            return request.user.role.name in ['Clinic Admin', 'Therapist']
+        return False
 
     def has_delete_permission(self, request, obj=None):
         if not self.has_module_permission(request):
             return False
-        return True
+        if hasattr(request.user, 'role') and request.user.role:
+            return request.user.role.name == 'Neuvii Admin'
+        return False
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -403,6 +417,18 @@ class ChildAdmin(admin.ModelAdmin):
         user_role = request.user.role.name
         if user_role == 'Neuvii Admin':
             return qs  # Full access for Neuvii Admin
+        elif user_role == 'Clinic Admin':
+            if hasattr(request.user, 'clinic_admin'):
+                return qs.filter(clinic=request.user.clinic_admin)
+            return qs.none()
+        elif user_role == 'Therapist':
+            if hasattr(request.user, 'therapist_profile'):
+                return qs.filter(assigned_therapist=request.user.therapist_profile)
+            return qs.none()
+        elif user_role == 'Parent':
+            if hasattr(request.user, 'parent_profile'):
+                return qs.filter(parent=request.user.parent_profile)
+            return qs.none()
         return qs.none()
 
     def save_model(self, request, obj, form, change):
